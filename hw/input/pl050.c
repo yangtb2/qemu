@@ -196,6 +196,7 @@ static void pl050_mouse_realize(DeviceState *dev, Error **errp)
 
 static void pl050_mouse_init(Object *obj)
 {
+    printf("pl050_mouse_init\n");
     PL050MouseState *s = PL050_MOUSE_DEVICE(obj);
     PL050State *ps = PL050(obj);
 

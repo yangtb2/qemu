@@ -102,6 +102,10 @@ struct VHostUserInput {
     VHostUserBase parent_obj;
 };
 
+struct VHostUserInputMain {
+    VHostUserBase parent_obj;
+};
+
 void virtio_input_send(VirtIOInput *vinput, virtio_input_event *event);
 void virtio_input_init_config(VirtIOInput *vinput,
                               virtio_input_config *config);

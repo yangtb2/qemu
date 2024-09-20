@@ -753,6 +753,7 @@ static const VMStateDescription vmstate_kbd_mmio = {
 
 static void i8042_mmio_class_init(ObjectClass *klass, void *data)
 {
+    printf("i8042_mmio_class_init\n");
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = i8042_mmio_realize;

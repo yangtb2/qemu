@@ -1645,3 +1645,19 @@ void qemu_display_help(void)
         }
     }
 }
+
+void dpy_get_render_rel_size(DisplayRelSize *size)
+{
+    DisplayState *s = consoles.tqh_first->ds;
+    DisplayChangeListener *dcl;
+
+    QLIST_FOREACH(dcl, &s->listeners, next){
+        if(!qemu_console_is_graphic(dcl->con)){
+            continue;
+        }
+        if(dcl->ops->dpy_get_render_rel_size){
+            if(dcl->ops->dpy_get_render_rel_size(dcl, size))
+                return;
+        }
+    }
+}

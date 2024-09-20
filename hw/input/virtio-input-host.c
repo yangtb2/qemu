@@ -8,12 +8,17 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qemu/sockets.h"
-
+#include "ui/console.h"
+#include "qom/object_interfaces.h"
+#include "qapi/qmp/qdict.h"
+#include "monitor/qdev.h"
 #include "hw/virtio/virtio.h"
 #include "hw/qdev-properties.h"
 #include "hw/virtio/virtio-input.h"
 
+#include <dirent.h>
 #include <sys/ioctl.h>
+#include <sys/inotify.h>
 #include "standard-headers/linux/input.h"
 
 /* ----------------------------------------------------------------- */
@@ -21,6 +26,53 @@
 static struct virtio_input_config virtio_input_host_config[] = {
     { /* empty list */ },
 };
+
+static void fix_event_axis(VirtIOInputHost *vih, struct input_event *event)
+{
+    VirtIOInput *vinput = VIRTIO_INPUT(vih);
+    virtio_input_config *config;
+    DisplayRelSize size;
+    double x, y;
+    int min, max;
+
+    if(event->type != EV_ABS){
+        return;
+    }
+
+    config = virtio_input_find_config(vinput, VIRTIO_INPUT_CFG_ABS_INFO, event->code);
+    if(!config){
+        return;
+    }
+
+    min = config->u.abs.min;
+    max = config->u.abs.max;
+    dpy_get_render_rel_size(&size);
+    switch (event->code)
+    {
+    case ABS_X:
+    case ABS_MT_POSITION_X:
+        x = 1.0 * event->value / (max - min);
+        if(x < size.x)
+            x = size.x;
+        if(x > size.x + size.w)
+            x = size.x + size.w;
+        x = (x - size.x) / size.w * (max - min);
+        event->value = x;
+        break;
+    case ABS_Y:
+    case ABS_MT_POSITION_Y:
+        y = 1.0 * event->value / (max - min);
+        if(y < size.y)
+            y = size.y;
+        if(y > size.y + size.h)
+            y = size.y + size.h;
+        y = (y - size.y) / size.h * (max - min);
+        event->value = y;
+    break;
+    default:
+        break;
+    }
+}
 
 static void virtio_input_host_event(void *opaque)
 {
@@ -36,10 +88,17 @@ static void virtio_input_host_event(void *opaque)
             break;
         }
 
+        if(evdev.type == EV_MSC && evdev.code == MSC_TIMESTAMP)
+            evdev.value *= 5;
+        fix_event_axis(vih, &evdev);
+
         virtio.type  = cpu_to_le16(evdev.type);
         virtio.code  = cpu_to_le16(evdev.code);
         virtio.value = cpu_to_le32(evdev.value);
         virtio_input_send(vinput, &virtio);
+    }
+    if (vinput->qindex) {
+        rc = ioctl(vih->fd, EVIOCGRAB, 0);
     }
 }
 
@@ -125,12 +184,12 @@ static void virtio_input_host_realize(DeviceState *dev, Error **errp)
         goto err_close;
     }
 
-    rc = ioctl(vih->fd, EVIOCGRAB, 1);
-    if (rc < 0) {
-        error_setg_errno(errp, errno, "%s: failed to get exclusive access",
-                         vih->evdev);
-        goto err_close;
-    }
+    // rc = ioctl(vih->fd, EVIOCGRAB, 1);
+    // if (rc < 0) {
+    //     error_setg_errno(errp, errno, "%s: failed to get exclusive access",
+    //                      vih->evdev);
+    //     goto err_close;
+    // }
 
     memset(&id, 0, sizeof(id));
     ioctl(vih->fd, EVIOCGNAME(sizeof(id.u.string)-1), id.u.string);

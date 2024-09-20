@@ -157,6 +157,13 @@ typedef struct QemuUIInfo {
     uint32_t  refresh_rate;
 } QemuUIInfo;
 
+typedef struct DisplayRelSize{
+    double x;
+    double y;
+    double w;
+    double h;
+}DisplayRelSize;
+
 /* cursor data format is 32bit RGBA */
 typedef struct QEMUCursor {
     uint16_t            width, height;
@@ -267,7 +274,8 @@ typedef struct DisplayChangeListenerOps {
     /* required if GL */
     void (*dpy_gl_update)(DisplayChangeListener *dcl,
                           uint32_t x, uint32_t y, uint32_t w, uint32_t h);
-
+    
+    bool (*dpy_get_render_rel_size)(DisplayChangeListener *dcl, DisplayRelSize *size);
 } DisplayChangeListenerOps;
 
 struct DisplayChangeListener {
@@ -479,4 +487,5 @@ bool qemu_console_fill_device_address(QemuConsole *con,
                                       size_t size,
                                       Error **errp);
 
+void dpy_get_render_rel_size(DisplayRelSize *size);
 #endif

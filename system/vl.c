@@ -2712,6 +2712,8 @@ void qmp_x_exit_preconfig(Error **errp)
 
     qemu_init_board();
     qemu_create_cli_devices();
+    // object_new("virtio-input-host-monitor");
+    object_new("vhost-input-main");
     if (!qemu_machine_creation_done(errp)) {
         return;
     }

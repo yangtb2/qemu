@@ -52,6 +52,7 @@ void virtio_input_send(VirtIOInput *vinput, virtio_input_event *event)
             }
             vinput->qindex = 0;
             trace_virtio_input_queue_full();
+            printf("vring is full\n");
             return;
         }
         vinput->queue[i].elem = elem;
@@ -209,6 +210,7 @@ static void virtio_input_reset(VirtIODevice *vdev)
     VirtIOInputClass *vic = VIRTIO_INPUT_GET_CLASS(vdev);
     VirtIOInput *vinput = VIRTIO_INPUT(vdev);
 
+    printf("virtio_input_reset\n");
     if (vinput->active) {
         vinput->active = false;
         if (vic->change_active) {
@@ -224,6 +226,7 @@ static int virtio_input_post_load(void *opaque, int version_id)
     VirtIODevice *vdev = VIRTIO_DEVICE(vinput);
 
     vinput->active = vdev->status & VIRTIO_CONFIG_S_DRIVER_OK;
+    printf("virtio_input_post_load: %d\n", vinput->active);
     if (vic->change_active) {
         vic->change_active(vinput);
     }

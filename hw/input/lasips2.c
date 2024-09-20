@@ -435,6 +435,7 @@ static void lasips2_mouse_port_realize(DeviceState *dev, Error **errp)
 
 static void lasips2_mouse_port_init(Object *obj)
 {
+    printf("lasips2_mouse_port_init\n");
     LASIPS2MousePort *s = LASIPS2_MOUSE_PORT(obj);
     LASIPS2Port *lp = LASIPS2_PORT(obj);
 

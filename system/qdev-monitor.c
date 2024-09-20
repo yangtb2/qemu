@@ -626,6 +626,7 @@ DeviceState *qdev_device_add_from_qdict(const QDict *opts,
     BusState *bus = NULL;
 
     driver = qdict_get_try_str(opts, "driver");
+    printf("driver=%s\n", qdict_get_try_str(opts, "driver"));
     if (!driver) {
         error_setg(errp, QERR_MISSING_PARAMETER, "driver");
         return NULL;
@@ -913,17 +914,22 @@ void qdev_unplug(DeviceState *dev, Error **errp)
     if (dev->parent_bus && !qbus_is_hotpluggable(dev->parent_bus)) {
         error_setg(errp, "Bus '%s' does not support hotplugging",
                    dev->parent_bus->name);
+        printf("Bus '%s' does not support hotplugging",
+        dev->parent_bus->name);
         return;
     }
 
     if (!dc->hotpluggable) {
         error_setg(errp, "Device '%s' does not support hotplugging",
                    object_get_typename(OBJECT(dev)));
+        printf("Device '%s' does not support hotplugging",
+                   object_get_typename(OBJECT(dev)));
         return;
     }
 
     if (!migration_is_idle() && !dev->allow_unplug_during_migration) {
         error_setg(errp, "device_del not allowed while migrating");
+        printf("device_del not allowed while migrating");
         return;
     }
 

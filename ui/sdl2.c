@@ -794,6 +794,41 @@ static void sdl_cleanup(void)
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
+static bool sdl_get_render_rel_size(DisplayChangeListener *dcl, DisplayRelSize *size)
+{
+    SDL_Renderer *real_renderer;
+    SDL_Window *real_window;
+    SDL_Rect dpyBounds, rect = {0};
+    int wx, wy, dpyIdx;
+    double rw, rh, rx, ry;
+    float sx, sy;
+
+    real_window = sdl2_console[0].real_window;
+    real_renderer = sdl2_console[0].real_renderer;
+    dpyIdx = SDL_GetWindowDisplayIndex(real_window);
+    if(!real_window || !real_renderer || dpyIdx < 0){
+        return false;
+    }
+
+    SDL_GetDisplayBounds(dpyIdx, &dpyBounds);
+    SDL_GetWindowPosition(real_window, &wx, &wy);
+    SDL_RenderGetScale(real_renderer, &sx, &sy);
+    SDL_RenderGetViewport(real_renderer, &rect);
+
+    rx = rect.x * sx + wx;
+    ry = rect.y * sy + wy;
+    rw = rect.w * sx;
+    rh = rect.h * sy;
+
+    size->x = rx / dpyBounds.w;
+    size->y = ry / dpyBounds.h;
+    size->w = rw / dpyBounds.w;
+    size->h = rh / dpyBounds.h;
+    printf("size:(x,y,w,h)=(%.3f, %.3f, %.3f, %.3f)\n", size->x, size->y, size->w, size->h);
+
+    return true;
+}
+
 static const DisplayChangeListenerOps dcl_2d_ops = {
     .dpy_name             = "sdl2-2d",
     .dpy_gfx_update       = sdl2_2d_update,
@@ -802,6 +837,7 @@ static const DisplayChangeListenerOps dcl_2d_ops = {
     .dpy_refresh          = sdl2_2d_refresh,
     .dpy_mouse_set        = sdl_mouse_warp,
     .dpy_cursor_define    = sdl_mouse_define,
+    .dpy_get_render_rel_size = sdl_get_render_rel_size
 };
 
 #ifdef CONFIG_OPENGL
