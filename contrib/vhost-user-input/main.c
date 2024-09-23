@@ -221,37 +221,46 @@ static void watch_evdev_pnp(int socket)
             continue;
         }
 
+        if (!g_unix_set_fd_nonblocking(fd, true, NULL)) {
+            g_printerr("Failed to set FD nonblocking : %s\n", g_strerror(errno));
+            goto close_fd;
+        }
+
+        arg = g_malloc(sizeof(vu_thread_data));
+        ds = (vu_thread_data*)arg;
+        memset(ds, 0, sizeof(*ds));
+        ds->fd = fd;
+
         if(is_a_touch_device(fd))
         {
             printf("%s is a multitouch\n", path);
+            ds->vi.ikind = VU_TOUCH;
         }
         else if(is_a_mouse_device(fd))
         {
             printf("%s is a mouse\n", path);
+            ds->vi.ikind = VU_MOUSE;
         }
         else if(is_a_keyboard_device(fd))
         {
             printf("%s is a keyboard\n", path);
-            continue;
+            ds->vi.ikind = VU_KEYBOARD;
         }
         else{
-            goto close_fd;
+            goto init_fail;
         }
-
 
         memset(msg.data.evdev, 0, sizeof(msg.data.evdev));
         memcpy(msg.data.evdev, item->d_name, strlen(item->d_name));
         printf("send add device msg : %s\n", msg.data.evdev);
         send(socket, &msg, sizeof(msg), 0);
         
-        arg = g_malloc(sizeof(vu_thread_data));
-        ds = (vu_thread_data*)arg;
-        ds->fd = fd;
         sprintf(socket_path, "/tmp/vhost-%s.sock", item->d_name);
         memcpy(ds->socket_path, socket_path, strlen(socket_path));
         g_thread_ref(g_thread_new("init_evdev", add_device, arg));
         continue;
-
+init_fail:
+        free(arg);
 close_fd:
         close(fd);
     }

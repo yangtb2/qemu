@@ -244,16 +244,42 @@ vi_bits_config(VuInput *vi, int type, int count)
 
 static bool need_grab(VuInput *vi)
 {
-    return false;
+    return vi->ikind == VU_KEYBOARD || vi->ikind == VU_MOUSE;
+}
+
+static void vi_abs_config(VuInput *vi, int axis)
+{
+    virtio_input_config config;
+    struct input_absinfo absinfo;
+    int rc;
+
+    rc = ioctl(vi->evdevfd, EVIOCGABS(axis), &absinfo);
+    if (rc < 0) {
+        return;
+    }
+
+    memset(&config, 0, sizeof(config));
+    config.select = VIRTIO_INPUT_CFG_ABS_INFO;
+    config.subsel = axis;
+    config.size   = sizeof(struct virtio_input_absinfo);
+
+    config.u.abs.min  = cpu_to_le32(absinfo.minimum);
+    config.u.abs.max  = cpu_to_le32(absinfo.maximum);
+    config.u.abs.fuzz = cpu_to_le32(absinfo.fuzz);
+    config.u.abs.flat = cpu_to_le32(absinfo.flat);
+    config.u.abs.res  = cpu_to_le32(absinfo.resolution);
+
+    g_array_append_val(vi->config, config);
 }
 
 gpointer add_device(gpointer arg)
 {
     vu_thread_data *ds = (vu_thread_data*)arg;
     VuInput *vi = &ds->vi;
-    virtio_input_config id;
+    virtio_input_config id, *abs;
     struct input_id ids;
-    int rc, ver, fd;
+    int rc, ver, fd, axis;
+    uint8_t byte;
 
     int evdev = ds->fd;
     char *socket_path = ds->socket_path;
@@ -298,6 +324,21 @@ gpointer add_device(gpointer arg)
     vi_bits_config(vi, EV_MSC, MSC_CNT);
     vi_bits_config(vi, EV_SW,  SW_CNT);
     g_debug("config length: %u", vi->config->len);
+
+    abs = vi_find_config(vi, VIRTIO_INPUT_CFG_EV_BITS, EV_ABS);
+    if (abs) {
+        for (int i = 0; i < abs->size; i++) {
+            byte = abs->u.bitmap[i];
+            axis = 8 * i;
+            while (byte) {
+                if (byte & 1) {
+                    vi_abs_config(vi, axis);
+                }
+                axis++;
+                byte >>= 1;
+            }
+        }
+    }
 
     if (need_grab(vi)) {
         rc = ioctl(vi->evdevfd, EVIOCGRAB, 1);

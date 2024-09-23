@@ -18,6 +18,12 @@ enum {
     VHOST_USER_INPUT_MAX_QUEUES = 2,
 };
 
+enum InputKind{
+    VU_KEYBOARD,
+    VU_MOUSE,
+    VU_TOUCH,
+};
+
 typedef struct virtio_input_event virtio_input_event;
 typedef struct virtio_input_config virtio_input_config;
 
@@ -32,6 +38,7 @@ typedef struct VuInput {
         VuVirtqElement *elem;
     } *queue;
     uint32_t qindex, qsize;
+    enum InputKind ikind;
 } VuInput;
 
 typedef struct vu_thread_data
