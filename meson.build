@@ -4240,6 +4240,7 @@ if have_tools
     subdir('contrib/vhost-user-blk')
     subdir('contrib/vhost-user-gpu')
     subdir('contrib/vhost-user-input')
+    subdir('contrib/vhost-user-input-monitor')
     subdir('contrib/vhost-user-scsi')
   endif
 
