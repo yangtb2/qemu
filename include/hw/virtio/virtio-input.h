@@ -46,6 +46,8 @@ OBJECT_DECLARE_SIMPLE_TYPE(VHostUserInput, VHOST_USER_INPUT)
 #define VHOST_USER_INPUT_GET_PARENT_CLASS(obj)             \
     OBJECT_GET_PARENT_CLASS(obj, TYPE_VHOST_USER_INPUT)
 
+
+
 typedef struct VirtIOInputConfig VirtIOInputConfig;
 
 struct VirtIOInputConfig {

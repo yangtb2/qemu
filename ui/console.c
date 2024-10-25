@@ -1616,3 +1616,9 @@ void qemu_display_help(void)
            "For a short list of the suboptions for each display, see the "
            "top-level -help output; more detail is in the documentation.\n");
 }
+
+GraphicConsoleState graphic_console_get_state(QemuConsole *con)
+{
+    GraphicConsoleState state = {0};
+    return state;
+}

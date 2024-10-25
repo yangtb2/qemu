@@ -38,7 +38,7 @@ if have_vhost
     system_virtio_ss.add(when: ['CONFIG_VIRTIO_PCI', 'CONFIG_VHOST_USER_SND'],
                          if_true: files('vhost-user-snd-pci.c'))
     system_virtio_ss.add(when: ['CONFIG_VIRTIO_PCI', 'CONFIG_VHOST_USER_INPUT'],
-                         if_true: files('vhost-user-input-pci.c'))
+                         if_true: files('vhost-user-input-pci.c','vhost-user-input-collector.c'))
   endif
   if have_vhost_vdpa
     system_virtio_ss.add(files('vhost-vdpa.c'))

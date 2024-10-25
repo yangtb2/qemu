@@ -157,6 +157,25 @@ typedef struct QemuUIInfo {
     uint32_t  refresh_rate;
 } QemuUIInfo;
 
+typedef struct DisplayWindowSize
+{
+    double x;
+    double y;
+    double w;
+    double h;
+    bool fullscreen;
+} DisplayWindowSize;
+
+typedef struct GraphicConsoleState
+{
+    DisplayWindowSize rel_size;
+    bool mouse_focous;
+    bool keyboard_focous;
+    bool hidden;
+} GraphicConsoleState;
+
+GraphicConsoleState graphic_console_get_state(QemuConsole *con);
+
 /* cursor data format is 32bit RGBA */
 typedef struct QEMUCursor {
     uint16_t            width, height;
