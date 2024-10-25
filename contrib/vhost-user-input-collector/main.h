@@ -1,18 +1,18 @@
 #include "vhost-user-input-host.h"
 #include "sys/inotify.h"
 
-enum VuMainHostRequest
+enum VuCollectorHostRequest
 {
     AddDevice,
     DelDevice,
 };
 
-enum VuMainClientRequest
+enum VuCollectorClientRequest
 {
     WindowStatusChanged,
 };
 
-typedef struct VuMainSocketMsg
+typedef struct VuCollectorSocketMsg
 {
     int request;
     union
@@ -20,12 +20,12 @@ typedef struct VuMainSocketMsg
         GraphicConsoleState gcs;
         char evdev[16];
     } data;
-} VuMainSocketMsg;
+} VuCollectorSocketMsg;
 
-typedef struct VuMaingSrc
+typedef struct VuCollectorSrc
 {
     GSource parent;
     GPollFD gfd;
-} VuMaingSrc;
+} VuCollectorSrc;
 
-typedef void (*vu_main_watch_cb) (int fd, int cond, void *data);
+typedef void (*vu_collector_watch_cb) (int fd, int cond, void *data);

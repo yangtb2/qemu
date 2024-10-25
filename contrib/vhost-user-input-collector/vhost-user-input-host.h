@@ -71,9 +71,6 @@ typedef struct GraphicConsoleState
     bool mouse_focous;
     bool keyboard_focous;
     bool hidden;
-#ifdef __LIMBO__
-    int limbo_multi_window_mode;
-#endif //__LIMBO
 } GraphicConsoleState;
 
 extern GraphicConsoleState global_gcs;

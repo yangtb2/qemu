@@ -22,22 +22,19 @@ static bool vu_input_should_disable(GraphicConsoleState *gcs)
 {
     bool disable;
     disable = gcs->hidden || gcs->rel_size.fullscreen;
-#ifdef __LIMBO__
-    disable |= gcs->limbo_multi_window_mode;
-#endif //__LIMBO
     return disable;
 }
 
-static void vu_main_msg_read(int fd, void *data)
+static void vu_collector_msg_read(int fd, void *data)
 {
-    VuMainSocketMsg msg;
+    VuCollectorSocketMsg msg;
     GraphicConsoleState *gcs;
     struct vu_input_device *vi;
     bool input_disabled;
     int ret;
 
     recv(fd, &msg, sizeof(msg), 0);
-    g_debug("vu_main_msg_read : command=%d\n", msg.request);
+    g_debug("vu_collector_msg_read : command=%d\n", msg.request);
 
     switch (msg.request)
     {
@@ -68,9 +65,6 @@ static void vu_main_msg_read(int fd, void *data)
         g_debug("keyboard focous : %d", gcs->keyboard_focous);
         g_debug("mouse focous : %d", gcs->mouse_focous);
         g_debug("hidden : %d", gcs->hidden);
-#ifdef __LIMBO__
-        g_debug("limbo_multi_window_mode : %d", gcs->limbo_muulti_window_mode);
-#endif //__LIMBO__
         break;
 
     default:
@@ -78,13 +72,13 @@ static void vu_main_msg_read(int fd, void *data)
     }
 }
 
-static void main_socket_dispatch(int fd, int cond, void *data)
+static void vu_collector_socket_dispatch(int fd, int cond, void *data)
 {
     if (cond & G_IO_HUP) {
         exit(EINVAL);
     }
     if (cond & G_IO_IN) {
-        vu_main_msg_read(fd, data);
+        vu_collector_msg_read(fd, data);
     }
 }
 
@@ -97,16 +91,16 @@ static gboolean vug_src_prepare(GSource *gsrc, gint *timeout)
 
 static gboolean vug_src_check(GSource *gsrc)
 {
-    VuMaingSrc *src = (VuMaingSrc *)gsrc;
+    VuCollectorSrc *src = (VuCollectorSrc *)gsrc;
     g_assert(src);
     return src->gfd.revents & src->gfd.events;
 }
 
 static gboolean vug_src_dispatch(GSource *gsrc, GSourceFunc cb, gpointer data)
 {
-    VuMaingSrc *src = (VuMaingSrc *)gsrc;
+    VuCollectorSrc *src = (VuCollectorSrc *)gsrc;
     g_assert(src);
-    ((vu_main_watch_cb)cb)(src->gfd.fd, src->gfd.revents, data);
+    ((vu_collector_watch_cb)cb)(src->gfd.fd, src->gfd.revents, data);
     return G_SOURCE_CONTINUE;
 }
 
@@ -117,18 +111,18 @@ static GSourceFuncs vug_src_funcs = {
     NULL
 };
 
-static GSource *main_g_source_new(int fd, GIOCondition cond, vu_main_watch_cb vu_cb)
+static GSource *main_g_source_new(int fd, GIOCondition cond, vu_collector_watch_cb vu_cb)
 {
     GSource *gsrc;
-    VuMaingSrc *src;
+    VuCollectorSrc *src;
     guint id;
 
     g_assert(fd >= 0);
     g_assert(vu_cb);
 
-    gsrc = g_source_new(&vug_src_funcs, sizeof(VuMaingSrc));
+    gsrc = g_source_new(&vug_src_funcs, sizeof(VuCollectorSrc));
     g_source_set_callback(gsrc, (GSourceFunc)vu_cb, NULL, NULL);
-    src = (VuMaingSrc*)gsrc;
+    src = (VuCollectorSrc*)gsrc;
     src->gfd.fd = fd;
     src->gfd.events = cond;
     g_source_add_poll(gsrc, &src->gfd);
@@ -141,7 +135,7 @@ static void add_device(char *name)
 {
     gchar *socket_path;
     struct vu_input_device *vid, *new_vid;
-    VuMainSocketMsg msg;
+    VuCollectorSocketMsg msg;
     gchar *uid;
     gchar *guid;
     new_vid = g_malloc(sizeof(*new_vid));
@@ -176,7 +170,7 @@ static void add_device(char *name)
 
 static void del_device(char *evdev)
 {
-    VuMainSocketMsg msg;
+    VuCollectorSocketMsg msg;
     struct vu_input_device *vid, *target = NULL;
     QLIST_FOREACH(vid,&vi_list, node) {
         if (g_strcmp0(vid->vi->evdev, evdev) == 0) {
@@ -239,7 +233,7 @@ static void watch_evdev_pnp(void)
     main_g_source_new(fd, G_IO_IN, evdev_notify_fd_dispatch);
 }
 
-static void vu_main_init(void)
+static void vu_collector_init(void)
 {
     DIR *dir = opendir("/dev/input");
     struct dirent *item;
@@ -279,8 +273,8 @@ int main(int argc, char *argv[])
         g_printerr("Invalid vhost-user socket.\n");
         exit(EXIT_FAILURE);
     }
-    gsrc = main_g_source_new(socket_fd, G_IO_IN, main_socket_dispatch);
-    vu_main_init();
+    gsrc = main_g_source_new(socket_fd, G_IO_IN, vu_collector_socket_dispatch);
+    vu_collector_init();
     loop = g_main_loop_new(NULL, FALSE);
     g_main_loop_run(loop);
     g_main_loop_unref(loop);
